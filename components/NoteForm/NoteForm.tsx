@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Formik, Form, Field, ErrorMessage } from "formik";
@@ -8,21 +9,29 @@ import css from "./NoteForm.module.css";
 import { createNote } from "@/lib/api";
 import type { CreateNotePayload, NoteTag } from "@/types/note";
 
-
 interface NoteFormProps {
   onCancel: () => void;
 }
 
 const validationSchema = Yup.object({
-  title: Yup.string().trim().required("Title is required").min(2, "Too short"),
-  content: Yup.string().trim().required("Content is required").min(2, "Too short"),
-  tag: Yup.string().required("Tag is required"),
+  title: Yup.string()
+    .trim()
+    .required("Title is required")
+    .min(3, "Title must be at least 3 characters")
+    .max(50, "Title must be at most 50 characters"),
+  content: Yup.string()
+    .trim()
+    .max(500, "Content must be at most 500 characters")
+    .notRequired(),
+  tag: Yup.mixed<NoteTag>()
+    .oneOf(["Todo", "Work", "Personal", "Meeting", "Shopping"])
+    .required("Tag is required"),
 });
 
 const initialValues: CreateNotePayload = {
   title: "",
   content: "",
-  tag: "Todo" as NoteTag,
+  tag: "Todo",
 };
 
 export default function NoteForm({ onCancel }: NoteFormProps) {
@@ -31,7 +40,6 @@ export default function NoteForm({ onCancel }: NoteFormProps) {
   const { mutate, isPending } = useMutation({
     mutationFn: (payload: CreateNotePayload) => createNote(payload),
     onSuccess: async () => {
-      // Після створення — оновлюємо список нотаток
       await queryClient.invalidateQueries({ queryKey: ["notes"] });
       onCancel();
     },
@@ -41,7 +49,12 @@ export default function NoteForm({ onCancel }: NoteFormProps) {
     <Formik
       initialValues={initialValues}
       validationSchema={validationSchema}
-      onSubmit={(values) => mutate(values)}
+      onSubmit={(values) =>
+        mutate({
+          ...values,
+          content: values.content?.trim() || "",
+        })
+      }
     >
       <Form className={css.form}>
         <label className={css.label}>
@@ -64,16 +77,19 @@ export default function NoteForm({ onCancel }: NoteFormProps) {
             <option value="Personal">Personal</option>
             <option value="Meeting">Meeting</option>
             <option value="Shopping">Shopping</option>
-            <option value="Other">Other</option>
           </Field>
           <ErrorMessage className={css.error} name="tag" component="span" />
         </label>
 
         <div className={css.actions}>
           <button className={css.button} type="submit" disabled={isPending}>
-            {isPending ? "Saving..." : "Save"}
+            Create note
           </button>
-          <button className={css.buttonSecondary} type="button" onClick={onCancel}>
+          <button
+            className={css.buttonSecondary}
+            type="button"
+            onClick={onCancel}
+          >
             Cancel
           </button>
         </div>

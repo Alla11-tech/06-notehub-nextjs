@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
@@ -10,15 +11,17 @@ export default function NoteDetailsClient() {
   const params = useParams<{ id: string }>();
   const id = String(params.id);
 
-  const { data: note, isLoading, error } = useQuery({
+  const {
+    data: note,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["note", id],
     queryFn: () => fetchNoteById(id),
+    refetchOnMount: false, // 
   });
 
-  // isLoading
   if (isLoading) return <p>Loading, please wait...</p>;
-
-  // error, !note
   if (error || !note) return <p>Something went wrong.</p>;
 
   return (
@@ -34,3 +37,4 @@ export default function NoteDetailsClient() {
     </div>
   );
 }
+
